@@ -8,7 +8,7 @@ import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.lifecycle.Startables;
 
-public class KafkaIcebergTestHarness extends IcebergMinioTestHarness {
+public class KafkaIcebergDockerTestHarness extends IcebergMinioDockerTestHarness {
 
   private KafkaContainer kafka;
 

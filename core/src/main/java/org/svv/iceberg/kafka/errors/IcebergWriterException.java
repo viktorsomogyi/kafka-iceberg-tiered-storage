@@ -1,4 +1,4 @@
-package org.svv.iceberg.kafka.storage;
+package org.svv.iceberg.kafka.errors;
 
 public class IcebergWriterException extends RuntimeException {
 

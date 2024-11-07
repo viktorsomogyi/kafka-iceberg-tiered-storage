@@ -1,0 +1,15 @@
+{
+   "type" : "record",
+   "namespace" : "org.apache.iot",
+   "name" : "fanout_device",
+   "fields" : [
+      { "name" : "topic_id" , "type" : "string" },
+      { "name" : "partition" , "type" : "int" },
+      { "name" : "logsegment_base_offset" , "type" : "long" },
+      { "name" : "record_offset" , "type" : "long" },
+      { "name" : "xid" , "type" : "long" },
+      { "name" : "name" , "type" : "string" },
+      { "name" : "version" , "type" : "int" },
+      { "name" : "timestamp" , "type" : "long" }
+   ]
+}

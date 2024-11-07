@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.UUID;
@@ -155,7 +154,7 @@ public class RestCatalogTest {
       registry.configure(new HashMap<>() {{
         put(ResourcesBasedSchemaRegistry.SCHEMA_RESOURCES_DIRECTORY, "schemas");
       }});
-      var context = new SchemaContext(new TopicIdPartition(Uuid.randomUuid(), 0, "devices"), Collections.emptyList());
+      var context = new SchemaContext(new TopicIdPartition(Uuid.randomUuid(), 0, "devices"));
       assertNotNull(registry.valueSchemaByContext(context));
     }
   }
@@ -170,7 +169,7 @@ public class RestCatalogTest {
         registry.configure(new HashMap<>() {{
           put(ResourcesBasedSchemaRegistry.SCHEMA_RESOURCES_DIRECTORY, "schemas");
         }});
-        var context = new SchemaContext(new TopicIdPartition(Uuid.randomUuid(), 0, "devices"), Collections.emptyList());
+        var context = new SchemaContext(new TopicIdPartition(Uuid.randomUuid(), 0, "devices"));
         deviceAvroSchema = registry.valueSchemaByContext(context);
       }
 
@@ -193,7 +192,7 @@ public class RestCatalogTest {
           assertEquals(1, catalog.listTables(namespace).size());
           // test data
           var device = new Device(1, "device-1", 1, System.currentTimeMillis());
-          var icebergRecord = device.toIceberg(deviceSchema);
+          var icebergRecord = device.toIceberg();
           // get table
           var table = catalog.loadTable(tableName);
           // create a new file

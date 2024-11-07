@@ -1,0 +1,9 @@
+{
+  "type" : "record",
+  "namespace" : "org.svv.iceberg",
+  "name" : "iceberg_metadata",
+  "fields" : [
+    { "name" : "filepaths", "type" : "array", "items": "string", "default": [] },
+    { "name" : "schema" , "type" : "string" }
+  ]
+}

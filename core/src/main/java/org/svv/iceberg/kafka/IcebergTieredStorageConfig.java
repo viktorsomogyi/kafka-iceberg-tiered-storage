@@ -2,6 +2,9 @@ package org.svv.iceberg.kafka;
 
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
+import org.svv.iceberg.kafka.storage.IcebergConfig;
+import org.svv.iceberg.kafka.storage.readers.IcebergFanoutReader;
+import org.svv.iceberg.kafka.storage.writers.IcebergSequentialWriter;
 
 import java.util.Map;
 import java.util.Set;
@@ -13,9 +16,14 @@ public class IcebergTieredStorageConfig extends AbstractConfig {
   public static final String SCHEMA_REGISTRY_CLASS_CONFIG = "schema.registry.class";
   public static final String SCHEMA_REGISTRY_CLASS_DOCS = "Specifies the implementation of the schema registry to use.";
 
-  public static final String SCHEMA_REGISTRY_CONFIGS_PREFIX = "schema.registry.config.";
-  public static final String ICEBERG_CONFIGS_PREFIX = "iceberg.config.";
-  public static final String ICEBERG_CATALOG_CONFIGS_PREFIX = "iceberg.catalog.config.";
+  public static final String SCHEMA_REGISTRY_CONFIGS_PREFIX = "schema.registry.";
+  public static final String ICEBERG_CONFIGS_PREFIX = "iceberg.";
+
+  public static final String ICEBERG_WRITER_CLASS_CONFIG = "iceberg.writer.class";
+  public static final String ICEBERG_WRITER_CLASS_DOCS = "Specifies the implementation of the Iceberg writer to use.";
+
+  public static final String ICEBERG_READER_CLASS_CONFIG = "iceberg.reader.class";
+  public static final String ICEBERG_READER_CLASS_DOCS = "Specifies the implementation of the Iceberg reader to use.";
 
   public IcebergTieredStorageConfig(Map<?, ?> originals) {
     super(CONFIG, originals);
@@ -31,7 +39,17 @@ public class IcebergTieredStorageConfig extends AbstractConfig {
             ConfigDef.Type.CLASS,
             null,
             ConfigDef.Importance.HIGH,
-            SCHEMA_REGISTRY_CLASS_DOCS);
+            SCHEMA_REGISTRY_CLASS_DOCS)
+        .define(ICEBERG_WRITER_CLASS_CONFIG,
+            ConfigDef.Type.CLASS,
+            IcebergSequentialWriter.class.getName(),
+            ConfigDef.Importance.HIGH,
+            ICEBERG_WRITER_CLASS_DOCS)
+        .define(ICEBERG_READER_CLASS_CONFIG,
+            ConfigDef.Type.CLASS,
+            IcebergFanoutReader.class.getName(),
+            ConfigDef.Importance.HIGH,
+            ICEBERG_READER_CLASS_DOCS);
   }
 
   public static Set<String> configNames() {
@@ -46,11 +64,15 @@ public class IcebergTieredStorageConfig extends AbstractConfig {
     return originalsWithPrefix(SCHEMA_REGISTRY_CONFIGS_PREFIX);
   }
 
-  public Map<String, Object> icebergConfigs() {
-    return originalsWithPrefix(ICEBERG_CONFIGS_PREFIX);
+  public IcebergConfig icebergConfigs() {
+    return new IcebergConfig(originalsWithPrefix(ICEBERG_CONFIGS_PREFIX));
   }
 
-  public Map<String, Object> icebergCatalogConfigs() {
-    return originalsWithPrefix(ICEBERG_CATALOG_CONFIGS_PREFIX);
+  public Class<?> getIcebergWriterClass() {
+    return getClass(ICEBERG_WRITER_CLASS_CONFIG);
+  }
+
+  public Class<?> getIcebergReaderClass() {
+    return getClass(ICEBERG_READER_CLASS_CONFIG);
   }
 }

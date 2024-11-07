@@ -9,6 +9,7 @@ import org.apache.iceberg.relocated.com.google.common.collect.ImmutableMap;
 import org.apache.iceberg.rest.RESTCatalog;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.svv.iceberg.kafka.RESTCatalogContainer;
@@ -23,9 +24,11 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Stream;
 
-public class IcebergMinioTestHarness {
+public class IcebergMinioDockerTestHarness {
 
   private static final String ICEBERG_BUCKET = "iceberg-test";
   private static final String AWS_ACCESS_KEY = "minioadmin";
@@ -36,7 +39,7 @@ public class IcebergMinioTestHarness {
   private static final int REST_PORT = 8181;
   private static final Logger minioLogger = LoggerFactory.getLogger("minio-logger");
   private static final Logger restLogger = LoggerFactory.getLogger("rest-logger");
-  private static final String MINIO_IMAGE = "minio/minio:RELEASE.2024-09-13T20-26-02Z";
+  private static final String MINIO_IMAGE = "minio/minio:latest";
 
   private MinIOContainer minIOContainer;
   private RESTCatalogContainer restCatalogContainer;
@@ -146,5 +149,18 @@ public class IcebergMinioTestHarness {
     } catch (URISyntaxException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  protected Map<String, String>  getCatalogConfigs() {
+    Map<String, String> catalogConfigs = new HashMap<>();
+    String catalogUrl = "http://" + restCatalogContainer.getHost() + ":" + restCatalogContainer.getMappedPort(REST_PORT);
+    catalogConfigs.put(CatalogProperties.URI, catalogUrl);
+    catalogConfigs.put(CatalogProperties.FILE_IO_IMPL, S3FileIO.class.getName());
+    catalogConfigs.put("s3.endpoint", "http://localhost:" + getHostMinioPort());
+    catalogConfigs.put("s3.access-key-id", AWS_ACCESS_KEY);
+    catalogConfigs.put("s3.secret-access-key", AWS_SECRET_KEY);
+    catalogConfigs.put("s3.path-style-access", "true");
+    catalogConfigs.put("client.region", AWS_REGION);
+    return catalogConfigs;
   }
 }

@@ -1,43 +1,48 @@
-package org.svv.iceberg.kafka.storage;
+package org.svv.iceberg.kafka.storage.writers;
 
 import org.apache.avro.Schema;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.iceberg.CatalogUtil;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Table;
 import org.apache.iceberg.avro.AvroSchemaUtil;
-import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.data.GenericRecord;
 import org.apache.iceberg.data.parquet.GenericParquetWriter;
 import org.apache.iceberg.io.DataWriter;
 import org.apache.iceberg.io.OutputFile;
+import org.apache.iceberg.io.WriteResult;
 import org.apache.iceberg.parquet.Parquet;
 import org.apache.kafka.common.record.Record;
 import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentMetadata;
+import org.svv.iceberg.kafka.errors.IcebergWriterException;
+import org.svv.iceberg.kafka.storage.CatalogSingleton;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 
 import static org.svv.iceberg.kafka.storage.IcebergConverter.parseAvro;
 import static org.svv.iceberg.kafka.storage.IcebergConverter.toIcebergRecord;
 
-public class IcebergWriterImpl implements IcebergWriter {
-
-  private Catalog catalog;
+/**
+ * <p>
+ * Iceberg writer that writes records to Iceberg tables sequentially.
+ * It maps Parquet files to log segments one to one. It may be quicker to write to Iceberg tables sequentially
+ * and quicker to read from them sequentially, but the Parquet files can't be merged, therefore less efficient
+ * in storage.
+ * </p>
+ * <p>
+ * It doesn't require any specific fields in the schema, although reading isn't agnostic to the storage.
+ * </p>
+ */
+public class IcebergSequentialWriter implements IcebergWriter {
 
   @Override
   public void configure(Map<String, ?> map) {
-    IcebergConfig icebergConfig = new IcebergConfig(map);
-    var configuration = new Configuration();
-    catalog = CatalogUtil.loadCatalog(icebergConfig.catalogImpl(),
-                                      icebergConfig.catalogName(),
-                                      icebergConfig.catalogProperties(),
-                                      configuration);
   }
 
   @Override
-  public void write(RemoteLogSegmentMetadata remoteLogSegmentMetadata, Schema schema, Iterable<Record> records) {
+  public WriteResult write(RemoteLogSegmentMetadata remoteLogSegmentMetadata, Schema schema, Iterable<Record> records) {
+    var catalog = CatalogSingleton.catalog();
     // Write the schema to the Iceberg table
     org.apache.iceberg.Schema icebergSchema = AvroSchemaUtil.toIceberg(schema);
     var tableName = TableIdentifier.of(schema.getNamespace(), schema.getName());
@@ -45,10 +50,10 @@ public class IcebergWriterImpl implements IcebergWriter {
       catalog.createTable(tableName, icebergSchema);
     }
     Table table = catalog.loadTable(tableName);
-    writeToFile(remoteLogSegmentMetadata, schema, records, table, icebergSchema);
+    return writeToIceberg(remoteLogSegmentMetadata, schema, records, table, icebergSchema);
   }
 
-  private static void writeToFile(RemoteLogSegmentMetadata remoteLogSegmentMetadata, Schema schema, Iterable<Record> records, Table table, org.apache.iceberg.Schema icebergSchema) {
+  private static WriteResult writeToIceberg(RemoteLogSegmentMetadata remoteLogSegmentMetadata, Schema schema, Iterable<Record> records, Table table, org.apache.iceberg.Schema icebergSchema) {
     String filepath = getFilepath(remoteLogSegmentMetadata, table);
     OutputFile file = table.io().newOutputFile(filepath);
     DataWriter<GenericRecord> dataWriter;
@@ -65,23 +70,29 @@ public class IcebergWriterImpl implements IcebergWriter {
     // write the record
     try (dataWriter) {
       for (Record record : records) {
-        dataWriter.write(toIcebergRecord(schema, parseAvro(record.value().array(), schema)));
+        var avroRecord = parseAvro(record, schema);
+        dataWriter.write(toIcebergRecord(schema, avroRecord));
       }
-      table.newAppend().appendFile(dataWriter.toDataFile()).commit();
     } catch (IOException e) {
       throw new IcebergWriterException(e);
     }
+    var result = WriteResult.builder().addDataFiles(dataWriter.toDataFile()).build();
+    Arrays.stream(result.dataFiles()).sequential().forEach(dataFile -> table.newAppend().appendFile(dataFile).commit());
+    return result;
   }
 
   private static String getFilepath(RemoteLogSegmentMetadata remoteLogSegmentMetadata, Table table) {
     var topicId = remoteLogSegmentMetadata.topicIdPartition().topicId();
     var topicName = remoteLogSegmentMetadata.topicIdPartition().topicPartition().topic();
     var partition = remoteLogSegmentMetadata.topicIdPartition().topicPartition().partition();
-    String filepath = table.location()
-        + "/" + topicId
-        + "/" + topicName + "-" + partition
-        + "/" + remoteLogSegmentMetadata.remoteLogSegmentId().toString()
+    return table.location()
+        + "/" + topicName + "-" + partition + "-" + topicId
+        + "/" + remoteLogSegmentMetadata.remoteLogSegmentId().id().toString()
         + "/" + remoteLogSegmentMetadata.startOffset();
-    return filepath;
+  }
+
+  @Override
+  public void close() throws IOException {
+
   }
 }
