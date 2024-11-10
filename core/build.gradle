@@ -17,6 +17,7 @@ dependencies {
     implementation libs.kafka.clients
     implementation libs.kafka.storage
     implementation libs.kafka.storage.api
+    implementation libs.slf4j
 
     testImplementation libs.bundles.iceberg.ext
     testImplementation libs.bundles.testcontainers

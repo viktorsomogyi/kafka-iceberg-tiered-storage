@@ -14,7 +14,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
 
-public record IcebergMetadata(String[] filePaths, Schema originalSchema) {
+public record IcebergMetadata(List<String> filePaths, Schema originalSchema) {
 
   private static final Schema schema;
 
@@ -36,7 +36,7 @@ public record IcebergMetadata(String[] filePaths, Schema originalSchema) {
   public static IcebergMetadata fromAvro(GenericRecord record) {
     var filepaths = (List<Utf8>) record.get("filepaths");
     return new IcebergMetadata(
-        filepaths.stream().map(Utf8::toString).toArray(String[]::new),
+        filepaths.stream().map(Utf8::toString).toList(),
         new Schema.Parser().parse(((Utf8) record.get("original_schema")).toString())
     );
   }

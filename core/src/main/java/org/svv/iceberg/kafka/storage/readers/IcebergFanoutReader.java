@@ -18,9 +18,9 @@ import java.util.Map;
 
 public class IcebergFanoutReader implements IcebergReader {
 
-  private final static String RECORD_OFFSET_KEY = "record_offset";
   private final static String SEGMENT_BASE_OFFSET_KEY = "segment_base_offset";
   private final static String TOPIC_ID_KEY = "topic_id";
+  private final static String PARTITION_KEY = "partition";
 
   @Override
   public void configure(Map<String, ?> map) {
@@ -37,6 +37,8 @@ public class IcebergFanoutReader implements IcebergReader {
     var tableName = TableIdentifier.of(customMetadata.originalSchema().getNamespace(), customMetadata.originalSchema().getName());
     var table = catalog.loadTable(tableName);
     try (var result = IcebergGenerics.read(table)
+        .where(Expressions.equal(TOPIC_ID_KEY, remoteLogSegmentMetadata.topicIdPartition().topicId().toString()))
+        .where(Expressions.equal(PARTITION_KEY, remoteLogSegmentMetadata.topicIdPartition().partition()))
         .where(Expressions.equal(SEGMENT_BASE_OFFSET_KEY, remoteLogSegmentMetadata.startOffset()))
         .build()) {
       List<GenericRecord> records = new ArrayList<>();

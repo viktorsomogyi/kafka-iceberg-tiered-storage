@@ -3,7 +3,16 @@
   "namespace" : "org.svv.iceberg",
   "name" : "iceberg_metadata",
   "fields" : [
-    { "name" : "filepaths", "type" : "array", "items": "string", "default": [] },
-    { "name" : "schema" , "type" : "string" }
+    {
+      "name": "original_schema",
+      "type": "string"
+    },
+    {
+      "name": "filepaths",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    }
   ]
 }

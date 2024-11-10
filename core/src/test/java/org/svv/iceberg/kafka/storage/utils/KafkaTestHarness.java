@@ -60,6 +60,7 @@ public class KafkaTestHarness extends IcebergMinioDockerTestHarness {
     var topicConfig = new HashMap<String, String>();
     topicConfig.put("remote.storage.enable", "true");
     topicConfig.put("local.retention.ms", "1000");
+    topicConfig.put("cleanup.policy", "delete");
     topicConfig.put("segment.bytes", "1048576");
     topicConfig.put("file.delete.delay.ms", "1000");
     var scalaTopicConfig = scala.collection.immutable.Map.from(CollectionConverters.MapHasAsScala(topicConfig).asScala());

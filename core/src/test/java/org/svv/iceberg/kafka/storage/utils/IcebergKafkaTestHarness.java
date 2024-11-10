@@ -32,6 +32,7 @@ public abstract class IcebergKafkaTestHarness extends KafkaTestHarness {
     brokerConfigs.put("remote.log.manager.task.interval.ms", "1000");
     brokerConfigs.put("remote.log.metadata.manager.impl.prefix", "rlmm.config.");
     brokerConfigs.put("remote.log.metadata.manager.listener.name", "PLAINTEXT");
+    brokerConfigs.put("remote.log.metadata.custom.metadata.max.bytes", "512000");
     brokerConfigs.put("rlmm.config.remote.log.metadata.topic.replication.factor", "1");
     return brokerConfigs;
   }
@@ -41,7 +42,7 @@ public abstract class IcebergKafkaTestHarness extends KafkaTestHarness {
     brokerConfigs.put("log.retention.check.interval.ms", "1000");
     brokerConfigs.put("log.local.retention.ms", "2000");
     brokerConfigs.put("log.segment.delete.delay.ms", "1000");
-//    brokerConfigs.put("file.delete.delay.ms", "5000");
+    brokerConfigs.put("log.initial.task.delay.ms", "2000");
 //    brokerConfigs.put("log.local.retention.bytes", "10485760");
     brokerConfigs.put("log.segment.bytes", "1048576");
     return brokerConfigs;

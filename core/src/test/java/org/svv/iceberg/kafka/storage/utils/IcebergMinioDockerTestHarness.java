@@ -115,23 +115,6 @@ public class IcebergMinioDockerTestHarness {
     }
   }
 
-  public Catalog createRestCatalog() {
-    RESTCatalog result = new RESTCatalog();
-    String catalogUrl = "http://" + restCatalogContainer.getHost() + ":" + restCatalogContainer.getMappedPort(REST_PORT);
-    result.initialize(
-        "local",
-        ImmutableMap.<String, String>builder()
-            .put(CatalogProperties.URI, catalogUrl)
-            .put(CatalogProperties.FILE_IO_IMPL, S3FileIO.class.getName())
-            .put("s3.endpoint", "http://localhost:" + getHostMinioPort())
-            .put("s3.access-key-id", AWS_ACCESS_KEY)
-            .put("s3.secret-access-key", AWS_SECRET_KEY)
-            .put("s3.path-style-access", "true")
-            .put("client.region", AWS_REGION)
-            .build());
-    return result;
-  }
-
   private int getHostMinioPort() {
     return minIOContainer.getMappedPort(MINIO_PORT);
   }

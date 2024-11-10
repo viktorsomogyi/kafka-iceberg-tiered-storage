@@ -44,7 +44,7 @@ import static org.svv.iceberg.kafka.storage.IcebergConverter.toIcebergRecord;
  */
 public class IcebergFanOutWriter implements IcebergWriter {
 
-  private final static String RECORD_OFFSET_KEY = "";
+  private final static String RECORD_OFFSET_KEY = "record_offset";
   private final static String SEGMENT_BASE_OFFSET_KEY = "logsegment_base_offset";
   private final static String PARTITION_KEY = "partition";
   private final static String TOPIC_ID_KEY = "topic_id";
@@ -95,6 +95,7 @@ public class IcebergFanOutWriter implements IcebergWriter {
         var avroRecord = parseAvro(record, schema);
         avroRecord.put(RECORD_OFFSET_KEY, record.offset());
         avroRecord.put(SEGMENT_BASE_OFFSET_KEY, remoteLogSegmentMetadata.startOffset());
+        avroRecord.put(PARTITION_KEY, remoteLogSegmentMetadata.topicIdPartition().partition());
         avroRecord.put(TOPIC_ID_KEY, remoteLogSegmentMetadata.topicIdPartition().topicId().toString());
         writer.write(toIcebergRecord(schema, avroRecord));
       }

@@ -18,6 +18,8 @@ import org.apache.kafka.storage.internals.log.LazyIndex;
 import org.apache.kafka.storage.internals.log.LogFileUtils;
 import org.apache.kafka.storage.internals.log.LogSegment;
 import org.apache.kafka.storage.internals.log.TransactionIndex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.svv.iceberg.kafka.AvroUtils;
 import org.svv.iceberg.kafka.IcebergTieredStorageConfig;
 import org.svv.iceberg.kafka.schemas.IcebergMetadata;
@@ -40,6 +42,8 @@ import java.util.UUID;
 
 public class IcebergRemoteStorageManager implements RemoteStorageManager {
 
+  private static final Logger log = LoggerFactory.getLogger(IcebergRemoteStorageManager.class);
+
   private IcebergWriter icebergWriter;
   private IcebergReader icebergReader;
   private SchemaRegistry schemaRegistry;
@@ -50,14 +54,15 @@ public class IcebergRemoteStorageManager implements RemoteStorageManager {
 
   @Override
   public Optional<RemoteLogSegmentMetadata.CustomMetadata> copyLogSegmentData(RemoteLogSegmentMetadata remoteLogSegmentMetadata, LogSegmentData logSegmentData) throws RemoteStorageException {
+    log.info("Writing log segment data to Iceberg table: {}", remoteLogSegmentMetadata);
     var records = readAll(logSegmentData);
     var schemaContext = new SchemaContext(remoteLogSegmentMetadata.topicIdPartition());
     var schema = schemaRegistry.valueSchemaByContext(schemaContext);
     var writeResult = icebergWriter.write(remoteLogSegmentMetadata, schema, records.records());
     var icebergMetadata = new IcebergMetadata(Arrays.stream(writeResult.dataFiles())
         .map(df -> df.path().toString())
-        .toList()
-        .toArray(new String[] {}), schema);
+        .toList(), schema);
+    log.info("Wrote log segment data to Iceberg table: {}", icebergMetadata);
     return Optional.of(new RemoteLogSegmentMetadata.CustomMetadata(icebergMetadata.serialize()));
   }
 
@@ -71,7 +76,8 @@ public class IcebergRemoteStorageManager implements RemoteStorageManager {
   @Override
   public InputStream fetchLogSegment(RemoteLogSegmentMetadata remoteLogSegmentMetadata, int i, int i1) throws RemoteStorageException {
     // Reassemble a Kafka log segment from the Iceberg table and return it as an InputStream
-    return null;
+    var avroRecords = icebergReader.read(remoteLogSegmentMetadata);
+    return recordsToLogSegment(remoteLogSegmentMetadata, avroRecords);
   }
 
   @Override
